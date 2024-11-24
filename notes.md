@@ -1,0 +1,34 @@
+- how to get metric depth
+    - finetune the model on depth regression 
+        - init encoder of downstream MDE model with this one's pre-trained encoder params (vit-l)
+        - leave decoder random init (dpt)
+        - fine-tune with corresponding metric depth info
+
+- why disparity instead of direct depth regression
+    - more robust and sharper depth
+    - easier to handle scale and shift ambiguities
+        - this predicts relative depth instead of absolute depth. it is necessary because different scenes have different depth range (think outdoors vs indoors)
+        - disparity is inversely proportional to depth
+            - closer objects have larger distance in stereo image pair
+        - scale and shift ambiguities can be represented as linear transformations
+            - easier to model and train
+            - eg. a = 2meters, b = 4meters . invert it a = 0.5, b = 0.25 . scale by 2 and shift by 0.5 . a = 1.1, b = 0.6 . a is still larger than b (closer to camera)
+            - after converting back only relative relationship is maintained eg. a = 1/1.1m = 0.91m, b = 1/0.6 = 1.67m
+        - not using the disparity space makes it hard to get the original scale back
+
+- loss
+    - labeled
+        - scale and shift invariant loss
+            - used to make model learn relative depth relations
+                - invert depth
+                - normalize (to make ground truth and prediction have unit scale and shift)
+        - gradient matching 
+            - much more important with synthetic image depth sharpness
+                - like edge detector
+            - not used in DA v1
+            - how
+                - aligning the gradient depth map of predicted with that of ground truth
+                - apply loss at gradient level
+                - apply this at multiple levels
+    - pseudo labeled
+        - feature alignment loss
